@@ -12,16 +12,17 @@ class Product:
         self.capacity = capacity
         self.price = 0.0
 
-        self.calc_price()
-
     def produce(self, number_workers):
         self.availibility = min(self.availibility + number_workers*self.production, self.capacity)
+        self.calc_price(number_workers)
 
-    def calc_price(self):
-        if self.demand <= self.availibility:
+    def calc_price(self, n_people):
+        availibility_per_pers = self.availibility/n_people
+
+        if self.demand <= availibility_per_pers:
             self.price = 0.0
         else:
-            self.price = self.demand - self.availibility
+            self.price = self.demand - availibility_per_pers
 
     def buy(self, money, max_amount):
         amount = money/self.price
@@ -29,7 +30,6 @@ class Product:
         spent_money = amount*self.price
 
         self.availibility = max(0.0, self.availibility - amount)
-        self.calc_price()
 
         return (amount, spent_money)
 
@@ -37,7 +37,6 @@ class Product:
         earned_money = amount*self.price
 
         self.availibility = min(self.capacity, self.availibility + amount)
-        self.calc_price()
 
         return earned_money
 
@@ -45,6 +44,8 @@ class Planet:
     def __init__(self, popuplation, products = {}):
         self.popuplation = popuplation
         self.products = products
+
+        self.produce()
 
     def produce(self):
         for key, product in self.products.items():
@@ -58,14 +59,14 @@ def set_up_planet_A():
     return Planet(10000, products)
 
 def set_up_planet_B():
-    silver = Product('silver', 0.8, 0.0, 0.1, 1e+6)
+    silver = Product('silver', 0.8, 0.0, 0.0, 1e+6)
     gold = Product('gold', 0.9, 11.0, 1.5, 1e+6)
     products = {silver.name : silver, gold.name : gold}
 
     return Planet(10000, products)
 
 if __name__ == '__main__':
-    max_iter = 100
+    max_iter = 110
     planet_A = set_up_planet_A()
     planet_B = set_up_planet_B()
 
@@ -80,6 +81,13 @@ if __name__ == '__main__':
         planet_A.produce()
         planet_B.produce()
 
-        print(i, "/", max_iter, "price_sell_in_A", planet_A.products['silver'].availibility, "price_sell_in_B", planet_B.products['silver'].availibility)
+        print(i, "/", max_iter)
+        print("PLANET A")
+        print('Silver', 'availibility', planet_A.products['silver'].availibility, 'price', planet_A.products['silver'].price)
+        print('Gold', 'availibility', planet_A.products['gold'].availibility, 'price', planet_A.products['gold'].price)
+
+        print("PLANET B")
+        print('Silver', 'availibility', planet_B.products['silver'].availibility, 'price', planet_B.products['silver'].price)
+        print('Gold', 'availibility', planet_B.products['gold'].availibility, 'price', planet_B.products['gold'].price)
 
     print(80*'=')
