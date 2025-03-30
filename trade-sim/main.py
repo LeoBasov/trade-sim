@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import treelib as tr
+
 station1 = "station 1"
 station2 = "station 2"
 
@@ -89,7 +91,7 @@ class Tree:
     def _add_level(self, stations):
         new_level = []
         
-        for node in self. levels[-1]:
+        for node in self.levels[-1]:
             station = stations[node.current_station]
             
             # sell
@@ -110,6 +112,23 @@ class Tree:
             
     def _add_sell_node(self, node, good, station):
         print("adding sell node")
+        
+        _node = Node()
+        _node.action = action_sell
+        _node.money = node.money + node.stock[good] * station.buy_prizes[good]
+        _node.stock = node.stock
+        
+        _node.stock[good] = 0
+        
+        _node.current_station = node.current_station
+        _node.total_gain = node.total_gain + node.stock[good] * station.buy_prizes[good]
+        _node.parent = node
+        _node.children = []
+        _node.depth = node.depth + 1
+        
+        node.children.append(_node)
+        
+        return _node
         
     def _add_buy_node(self, node, good, station):
         print("adding buy node")
@@ -160,14 +179,35 @@ def set_up_merchants(world):
     
     world.merchants[merchant1].money = 10
     world.merchants[merchant1].stock[good_a] = 0
+    
+def visualize_tree(merchant):
+    tree = tr.Tree()
+    
+    for level in merchant.tree.levels:
+        for node in level:
+            if node.parent == None:
+                tree.create_node("root " + str(node.money), node)
+            else:
+                tree.create_node(node.action + " " + str(node.money), node, parent=node.parent)
+
+    #tree.create_node("Harry", "harry", parent="1")  # No parent means its the root node
+    #tree.create_node("Jane",  "jane"   , parent="harry")
+    #tree.create_node("Bill",  "bill"   , parent="harry")
+    #tree.create_node("Diane", "diane"  , parent="jane")
+    #tree.create_node("Mary",  "mary"   , parent="diane")
+    #tree.create_node("Mark",  "mark"   , parent="jane")
+
+    tree.show()
 
 if __name__ == '__main__':
     world = World()
-    max_depth = 2
+    max_depth = 3
     
     set_up_station(world)
     set_up_merchants(world)
     
     world.build_trees(max_depth)
+    
+    visualize_tree(world.merchants[merchant1])
     
     print("done")
