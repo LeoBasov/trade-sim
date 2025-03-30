@@ -3,6 +3,7 @@
 import copy
 import graphviz
 import math
+import matplotlib.pyplot as plt
 
 station1 = "station 1"
 station2 = "station 2"
@@ -21,10 +22,10 @@ travel_cost = 2
 do_nothing_cost = 1
 
 class World:
-    def __init__(self):
+    def __init__(self, max_depth):
         self.stations = dict()
         self.merchants = dict()
-        self.max_depth = 7
+        self.max_depth = max_depth
         
     def add_station(self, name):
         station = Station(name)
@@ -59,24 +60,28 @@ class Station:
         self.stock = dict()
         self.sell_prizes = dict()
         self.buy_prizes = dict()
+        self.money_made = dict()
         self.has_changed = False
         
     def add_good(self, good, number, sell_prize, buy_prize):
         self.stock[good] = number
         self.sell_prizes[good] = sell_prize
         self.buy_prizes[good] = buy_prize
+        self.money_made[good] = []
         self.has_changed = True
         
         print("added good to station", self.name)
         print("    name:", good, "number:", number, "sell_prize:", sell_prize, "buy_prize:", buy_prize)
 
     def buy(self, merchant, good, amount):
-        merchant.money += self.sell_prizes[good] * amount
+        merchant.money += self.buy_prizes[good] * amount
         merchant.stock[good] -= amount
+        self.money_made[good].append(-self.buy_prizes[good] * amount)
 
     def sell(self, merchant, good, amount):
         merchant.money -= self.sell_prizes[good] * amount
         merchant.stock[good] += amount
+        self.money_made[good].append(self.sell_prizes[good] * amount)
         
 class Merchant:
     def __init__(self, name, current_station):
@@ -347,18 +352,38 @@ def visualize_best_path(merchant):
     
     dot.render(directory='doctest-output', view=True)
 
+def visualize_stations(world):
+    legend = []
+
+    for name, station in world.stations.items():
+        print(station.money_made)
+
+        for good, money in station.money_made.items():
+            legend.append(name + " " + good)
+            money_full = [money[0]]
+
+            for i in range(1, len(money)):
+                money_full.append(money_full[i - 1] + money[i])
+
+            plt.plot(money_full)
+
+    plt.legend(legend)
+    plt.show()
+
 if __name__ == '__main__':
-    world = World()
+    max_depth = 10
+    world = World(max_depth)
     
     set_up_station(world)
     set_up_merchants(world)
 
-    for _ in range(6):
+    for _ in range(9):
         world.process()
     
     #visualize_tree_graphviz(world.merchants[merchant1])
-    visualize_best_path(world.merchants[merchant1])
+    #visualize_best_path(world.merchants[merchant1])
     #visualize_best_path(world.merchants[merchant2])
+    visualize_stations(world)
     
     print("done")
 
