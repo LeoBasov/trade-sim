@@ -24,6 +24,7 @@ class World:
     def __init__(self):
         self.stations = dict()
         self.merchants = dict()
+        self.max_depth = 7
         
     def add_station(self, name):
         station = Station(name)
@@ -35,11 +36,22 @@ class World:
         self.merchants[name] = merchant
         print("added merchant:", name, "to station:", current_station)
         
-    def build_trees(self, max_depth):
+    def build_trees(self):
         print("building trees")
         
         for name, merchant in self.merchants.items():
-            merchant.build_tree(self.stations, max_depth)
+            merchant.build_tree(self.stations, self.max_depth)
+
+        for name, station in self.stations.items():
+            station.has_changed = False
+
+    def process(self):
+        for name, station in self.stations.items():
+            if station.has_changed:
+                self.build_trees()
+
+        for name, merchant in self.merchants.items():
+            merchant.process()
 
 class Station:
     def __init__(self, name):
@@ -47,11 +59,13 @@ class Station:
         self.stock = dict()
         self.sell_prizes = dict()
         self.buy_prizes = dict()
+        self.has_changed = False
         
     def add_good(self, good, number, sell_prize, buy_prize):
         self.stock[good] = number
         self.sell_prizes[good] = sell_prize
         self.buy_prizes[good] = buy_prize
+        self.has_changed = True
         
         print("added good to station", self.name)
         print("    name:", good, "number:", number, "sell_prize:", sell_prize, "buy_prize:", buy_prize)
@@ -66,13 +80,43 @@ class Merchant:
         
     def build_tree(self, stations, max_depth):
         self.tree.build(self, stations, max_depth)
+
+    def process(self):
+        next_step = self.tree.get_next_step()
         
+        if next_step == None:
+            raise Exception("next_step is None")
+        elif next_step.action == action_move:
+            print(self.name + " processsing action " + action_move + " form " + self.current_station + " to " + next_step.current_station)
+            self.current_station = next_step.current_station
+        elif next_step.action == action_buy:
+            for good, value in self.stock.items():
+                if value != next_step.stock[good]:
+                    amount = next_step.stock[good] - value
+                    print(self.name + " processsing action " + action_buy + " of " + good + " amout " + str(amount))
+
+        elif next_step.action == action_sell:
+            print(self.name + " processsing action " + action_sell)
+        elif next_step.action == action_none:
+            print(self.name + " processsing action " + action_none)
+
 class Tree:
     def __init__(self):
         self.levels = []
+        self.best_path = []
+        self.current_step = 1
+
+    def get_next_step(self):
+        if self.current_step < len(self.best_path):
+            self.current_step += 1
+            return self.best_path[self.current_step - 1]
+        else:
+            return None
         
     def clear(self):
         self.levels = []
+        self.best_path = []
+        self.current_step = 1
         
     def build(self, merchant, stations, max_depth):
         last_level = 0
@@ -84,6 +128,8 @@ class Tree:
             print("build new level")
             last_level = len(self.levels)
             self._add_level(stations)
+
+        self.best_path = self.get_best_path_full()
             
     def get_best_path(self):
         max_gain = 0
@@ -289,16 +335,16 @@ def visualize_best_path(merchant):
 
 if __name__ == '__main__':
     world = World()
-    max_depth = 7
     
     set_up_station(world)
     set_up_merchants(world)
-    
-    world.build_trees(max_depth)
+
+    for _ in range(6):
+        world.process()
     
     #visualize_tree_graphviz(world.merchants[merchant1])
-    #visualize_best_path(world.merchants[merchant1])
-    visualize_best_path(world.merchants[merchant2])
+    visualize_best_path(world.merchants[merchant1])
+    #visualize_best_path(world.merchants[merchant2])
     
     print("done")
 
