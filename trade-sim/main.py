@@ -54,6 +54,10 @@ class World:
         for name, merchant in self.merchants.items():
             merchant.process()
 
+    def update_stations(self):
+        for name, station in self.stations.items():
+            station.update()
+
 class Station:
     def __init__(self, name):
         self.name = name
@@ -62,6 +66,10 @@ class Station:
         self.buy_prizes = dict()
         self.money_made = dict()
         self.has_changed = False
+
+    def update(self):
+        self.has_changed = True
+        print("updating station")
         
     def add_good(self, good, number, sell_prize, buy_prize):
         self.stock[good] = number
@@ -144,7 +152,6 @@ class Tree:
         self._add_root(merchant)
         
         while max_depth > len(self.levels) and last_level != len(self.levels):
-            print("build new level")
             last_level = len(self.levels)
             self._add_level(stations)
 
@@ -318,13 +325,13 @@ def set_up_merchants(world):
     print("setting up merchants")
     
     world.add_merchant(merchant1, station1)
-    world.add_merchant(merchant2, station2)
+    #world.add_merchant(merchant2, station2)
     
     world.merchants[merchant1].money = 11
     world.merchants[merchant1].stock[good_a] = 0
 
-    world.merchants[merchant2].money = 11
-    world.merchants[merchant2].stock[good_a] = 0
+    #world.merchants[merchant2].money = 11
+    #world.merchants[merchant2].stock[good_a] = 0
     
 def visualize_tree_graphviz(merchant):    
     dot = graphviz.Digraph('tree_graph', comment='tree graph')
@@ -356,8 +363,6 @@ def visualize_stations(world):
     legend = []
 
     for name, station in world.stations.items():
-        print(station.money_made)
-
         for good, money in station.money_made.items():
             legend.append(name + " " + good)
             money_full = [money[0]]
@@ -371,17 +376,20 @@ def visualize_stations(world):
     plt.show()
 
 if __name__ == '__main__':
-    max_depth = 10
+    max_depth = 12
     world = World(max_depth)
     
     set_up_station(world)
     set_up_merchants(world)
 
-    for _ in range(9):
+    for i in range(22):
+        if i > 0 and (i % (max_depth - 1) == 0):
+            world.update_stations()
+
         world.process()
     
     #visualize_tree_graphviz(world.merchants[merchant1])
-    #visualize_best_path(world.merchants[merchant1])
+    visualize_best_path(world.merchants[merchant1])
     #visualize_best_path(world.merchants[merchant2])
     visualize_stations(world)
     
