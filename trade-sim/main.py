@@ -69,6 +69,14 @@ class Station:
         
         print("added good to station", self.name)
         print("    name:", good, "number:", number, "sell_prize:", sell_prize, "buy_prize:", buy_prize)
+
+    def buy(self, merchant, good, amount):
+        merchant.money += self.sell_prizes[good] * amount
+        merchant.stock[good] -= amount
+
+    def sell(self, merchant, good, amount):
+        merchant.money -= self.sell_prizes[good] * amount
+        merchant.stock[good] += amount
         
 class Merchant:
     def __init__(self, name, current_station):
@@ -93,10 +101,16 @@ class Merchant:
             for good, value in self.stock.items():
                 if value != next_step.stock[good]:
                     amount = next_step.stock[good] - value
+                    self.current_station.sell(self, good, amount)
                     print(self.name + " processsing action " + action_buy + " of " + good + " amout " + str(amount))
 
         elif next_step.action == action_sell:
-            print(self.name + " processsing action " + action_sell)
+            for good, value in self.stock.items():
+                if value != next_step.stock[good]:
+                    amount = value - next_step.stock[good]
+                    self.current_station.buy(self, good, amount)
+                    print(self.name + " processsing action " + action_sell + " of " + good + " amout " + str(amount))
+
         elif next_step.action == action_none:
             print(self.name + " processsing action " + action_none)
 
