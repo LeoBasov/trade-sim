@@ -32,7 +32,7 @@ class World:
         print("added station:", name)
         
     def add_merchant(self, name, current_station):
-        merchant = Merchant(name, current_station)
+        merchant = Merchant(name, self.stations[current_station])
         self.merchants[name] = merchant
         print("added merchant:", name, "to station:", current_station)
         
@@ -87,7 +87,7 @@ class Merchant:
         if next_step == None:
             raise Exception("next_step is None")
         elif next_step.action == action_move:
-            print(self.name + " processsing action " + action_move + " form " + self.current_station + " to " + next_step.current_station)
+            print(self.name + " processsing action " + action_move + " form " + self.current_station.name + " to " + next_step.current_station.name)
             self.current_station = next_step.current_station
         elif next_step.action == action_buy:
             for good, value in self.stock.items():
@@ -183,7 +183,7 @@ class Tree:
         new_level = []
         
         for node in self.levels[-1]:
-            station = stations[node.current_station]
+            station = node.current_station
             
             # sell
             for good, value in node.stock.items():
@@ -198,7 +198,7 @@ class Tree:
             # travel
             for other_station_name, other_station in stations.items():
                 if other_station_name != node.current_station and node.money >= travel_cost:
-                    new_level.append(self._add_travel_node(node, good, other_station_name))
+                    new_level.append(self._add_travel_node(node, other_station))
                     
             # do nothing
             if node.money >= do_nothing_cost:
@@ -244,12 +244,12 @@ class Tree:
         
         return _node
     
-    def _add_travel_node(self, node, good, new_station_name):   
+    def _add_travel_node(self, node, new_station):   
         _node = Node()
         _node.action = action_move
         _node.money = node.money - travel_cost
         _node.stock = copy.deepcopy(node.stock)
-        _node.current_station = new_station_name
+        _node.current_station = new_station
         _node.total_gain = node.total_gain - travel_cost
         _node.parent = node
         _node.children = []
