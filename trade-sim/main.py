@@ -103,6 +103,25 @@ class Tree:
                 nodes.append(nodes[-1].parent)
                 
         return list(reversed(nodes))
+    
+    def get_best_path_full(self):
+        max_gain = -10000
+        best_node = self.levels[0][0]
+        
+        for node in self.levels[-1]:
+            if node.total_gain > max_gain:
+                max_gain = node.total_gain 
+                best_node = node
+                    
+        if best_node.parent == None:
+            return [best_node]
+        else:
+            nodes = [best_node]
+            
+            while nodes[-1].parent != None:
+                nodes.append(nodes[-1].parent)
+                
+        return list(reversed(nodes))
         
     def _add_root(self, merchant):
         root = Node()
@@ -251,7 +270,7 @@ def visualize_tree_graphviz(merchant):
     dot.render(directory='doctest-output', view=True) 
     
 def visualize_best_path(merchant):  
-    best_path = merchant.tree.get_best_path()
+    best_path = merchant.tree.get_best_path_full()
     dot = graphviz.Digraph('tree_graph', comment='tree graph')
     
     for node in best_path:
@@ -265,7 +284,7 @@ def visualize_best_path(merchant):
 
 if __name__ == '__main__':
     world = World()
-    max_depth = 8
+    max_depth = 7
     
     set_up_station(world)
     set_up_merchants(world)
