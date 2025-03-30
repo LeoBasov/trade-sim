@@ -8,6 +8,7 @@ station1 = "station 1"
 station2 = "station 2"
 
 merchant1 = "merchant 1"
+merchant2 = "merchant 2"
 
 good_a = "good_a"
 
@@ -252,9 +253,13 @@ def set_up_merchants(world):
     print("setting up merchants")
     
     world.add_merchant(merchant1, station1)
+    world.add_merchant(merchant2, station2)
     
     world.merchants[merchant1].money = 11
     world.merchants[merchant1].stock[good_a] = 0
+
+    world.merchants[merchant2].money = 11
+    world.merchants[merchant2].stock[good_a] = 0
     
 def visualize_tree_graphviz(merchant):    
     dot = graphviz.Digraph('tree_graph', comment='tree graph')
@@ -292,7 +297,8 @@ if __name__ == '__main__':
     world.build_trees(max_depth)
     
     #visualize_tree_graphviz(world.merchants[merchant1])
-    visualize_best_path(world.merchants[merchant1])
+    #visualize_best_path(world.merchants[merchant1])
+    visualize_best_path(world.merchants[merchant2])
     
     print("done")
 
