@@ -2,6 +2,7 @@
 
 import treelib as tr
 import copy
+import graphviz
 
 station1 = "station 1"
 station2 = "station 2"
@@ -210,8 +211,34 @@ def visualize_tree(merchant):
     #tree.create_node("Diane", "diane"  , parent="jane")
     #tree.create_node("Mary",  "mary"   , parent="diane")
     #tree.create_node("Mark",  "mark"   , parent="jane")
+    
+    tree.to_graphviz("test.dot")
 
     tree.show()
+    
+def visualize_tree_graphviz(merchant):    
+    dot = graphviz.Digraph('tree_graph', comment='tree graph')
+    
+    for level in merchant.tree.levels:
+        for node in level:
+            if node.parent == None:
+                dot.node(str(node), "root money: " + str(node.money) + " gain: " + str(node.total_gain))
+                #tree.create_node("root money:" + str(node.money) + " gain: " + str(node.total_gain), node)
+            else:
+                dot.node(str(node), "root money: " + str(node.money) + " gain: " + str(node.total_gain))
+                #tree.create_node(node.action + " " + str(node.money) + " gain: " + str(node.total_gain), node, parent=node.parent)
+                dot.edge(str(node.parent), str(node))
+    
+    #dot.node('A', 'King Arthur')  
+    #dot.node('B', 'Sir Bedevere the Wise')
+    #dot.node('L', 'Sir Lancelot the Brave')
+
+    #dot.edges(['AB', 'AL'])
+    #dot.edge('B', 'L', constraint='false')
+    
+    dot.render(directory='doctest-output')
+    
+    print(dot.source) 
 
 if __name__ == '__main__':
     world = World()
@@ -222,6 +249,6 @@ if __name__ == '__main__':
     
     world.build_trees(max_depth)
     
-    visualize_tree(world.merchants[merchant1])
+    visualize_tree_graphviz(world.merchants[merchant1])
     
     print("done")
