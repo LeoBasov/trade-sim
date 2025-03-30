@@ -67,7 +67,15 @@ class Tree:
         self.levels = []
         
     def build(self, merchant, stations, max_depth):
+        last_level = 0
+        
         self.clear()
+        self._add_root(merchant)
+        
+        while max_depth > len(self.levels) and last_level != len(self.levels):
+            print("build new level")
+            last_level = len(self.levels)
+            self._add_level(stations)
         
     def _add_root(self, merchant):
         root = Node()
@@ -75,6 +83,26 @@ class Tree:
         root.money = merchant.money
         root.stock = merchant.stock
         root.current_station = merchant.current_station
+        
+        self.levels.append([root])
+        
+    def _add_level(self, stations):
+        new_level = []
+        
+        # buy
+        for node in self. levels[-1]:
+            pass
+        
+        # sell
+        for node in self. levels[-1]:
+            pass
+        
+        # travel
+        for node in self. levels[-1]:
+            pass
+        
+        if len(new_level):
+            self.levels.append(new_level)
         
 class Node:
     def __init__(self):
@@ -107,7 +135,7 @@ def set_up_merchants(world):
 
 if __name__ == '__main__':
     world = World()
-    max_depth = 3
+    max_depth = 2
     
     set_up_station(world)
     set_up_merchants(world)
