@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import treelib as tr
+import copy
 
 station1 = "station 1"
 station2 = "station 2"
@@ -105,18 +106,18 @@ class Tree:
                     new_level.append(self._add_buy_node(node, good, station))
             
             # travel
-            pass
+            for other_station_name, other_station in stations.items():
+                if other_station_name != node.current_station and node.money > 0:
+                    new_level.append(self._add_travel_node(node, good, other_station_name))
         
         if len(new_level):
             self.levels.append(new_level)
             
     def _add_sell_node(self, node, good, station):
-        print("adding sell node")
-        
         _node = Node()
         _node.action = action_sell
         _node.money = node.money + node.stock[good] * station.buy_prizes[good]
-        _node.stock = node.stock
+        _node.stock = copy.deepcopy(node.stock)
         
         _node.stock[good] = 0
         
@@ -131,18 +132,31 @@ class Tree:
         return _node
         
     def _add_buy_node(self, node, good, station):
-        print("adding buy node")
-        
         _node = Node()
         n_bought = node.money % station.sell_prizes[good]
         _node.action = action_buy
         _node.money = node.money - n_bought * station.sell_prizes[good]
-        _node.stock = node.stock
+        _node.stock = copy.deepcopy(node.stock)
         
         _node.stock[good] += n_bought
         
         _node.current_station = node.current_station
         _node.total_gain = node.total_gain - n_bought * station.sell_prizes[good]
+        _node.parent = node
+        _node.children = []
+        _node.depth = node.depth + 1
+        
+        node.children.append(_node)
+        
+        return _node
+    
+    def _add_travel_node(self, node, good, new_station_name):   
+        _node = Node()
+        _node.action = action_move
+        _node.money = node.money - 1
+        _node.stock = copy.deepcopy(node.stock)
+        _node.current_station = new_station_name
+        _node.total_gain = node.total_gain - 1
         _node.parent = node
         _node.children = []
         _node.depth = node.depth + 1
@@ -186,9 +200,9 @@ def visualize_tree(merchant):
     for level in merchant.tree.levels:
         for node in level:
             if node.parent == None:
-                tree.create_node("root " + str(node.money), node)
+                tree.create_node("root money:" + str(node.money) + " gain: " + str(node.total_gain), node)
             else:
-                tree.create_node(node.action + " " + str(node.money), node, parent=node.parent)
+                tree.create_node(node.action + " " + str(node.money) + " gain: " + str(node.total_gain), node, parent=node.parent)
 
     #tree.create_node("Harry", "harry", parent="1")  # No parent means its the root node
     #tree.create_node("Jane",  "jane"   , parent="harry")
@@ -201,7 +215,7 @@ def visualize_tree(merchant):
 
 if __name__ == '__main__':
     world = World()
-    max_depth = 3
+    max_depth = 5
     
     set_up_station(world)
     set_up_merchants(world)
