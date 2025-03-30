@@ -7,20 +7,31 @@ merchant1 = "merchant 1"
 
 good_a = "good_a"
 
+action_move = "move"
+action_buy = "buy"
+action_sell = "sell"
+action_none = "none"
+
 class World:
     def __init__(self):
-        self.stattions = dict()
+        self.stations = dict()
         self.merchants = dict()
         
     def add_station(self, name):
         station = Station(name)
-        self.stattions[name] = station
+        self.stations[name] = station
         print("added station:", name)
         
     def add_merchant(self, name, current_station):
         merchant = Merchant(name, current_station)
         self.merchants[name] = merchant
         print("added merchant:", name, "to station:", current_station)
+        
+    def build_trees(self, max_depth):
+        print("building trees")
+        
+        for name, merchant in self.merchants.items():
+            merchant.build_tree(self.stations, max_depth)
 
 class Station:
     def __init__(self, name):
@@ -43,6 +54,38 @@ class Merchant:
         self.current_station = current_station
         self.money = 0
         self.stock = dict()
+        self.tree = Tree()
+        
+    def build_tree(self, stations, max_depth):
+        self.tree.build(self, stations, max_depth)
+        
+class Tree:
+    def __init__(self):
+        self.levels = []
+        
+    def clear(self):
+        self.levels = []
+        
+    def build(self, merchant, stations, max_depth):
+        self.clear()
+        
+    def _add_root(self, merchant):
+        root = Node()
+        
+        root.money = merchant.money
+        root.stock = merchant.stock
+        root.current_station = merchant.current_station
+        
+class Node:
+    def __init__(self):
+        self.action = action_none
+        self.money = 0
+        self.stock = dict()
+        self.current_station = ""
+        self.total_gain = 0
+        self.parent = None
+        self.children = []
+        self.depth = 0
         
 def set_up_station(world):
     print("setting up stations")
@@ -50,8 +93,8 @@ def set_up_station(world):
     world.add_station(station1)
     world.add_station(station2)
     
-    world.stattions[station1].add_good("good_a", 0, 9, 9)
-    world.stattions[station2].add_good("good_a", 0, 11, 11)
+    world.stations[station1].add_good("good_a", 0, 9, 9)
+    world.stations[station2].add_good("good_a", 0, 11, 11)
     
 
 def set_up_merchants(world):
@@ -64,8 +107,11 @@ def set_up_merchants(world):
 
 if __name__ == '__main__':
     world = World()
+    max_depth = 3
     
     set_up_station(world)
     set_up_merchants(world)
+    
+    world.build_trees(max_depth)
     
     print("done")
