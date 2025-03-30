@@ -89,20 +89,48 @@ class Tree:
     def _add_level(self, stations):
         new_level = []
         
-        # buy
         for node in self. levels[-1]:
-            pass
-        
-        # sell
-        for node in self. levels[-1]:
-            pass
-        
-        # travel
-        for node in self. levels[-1]:
+            station = stations[node.current_station]
+            
+            # sell
+            for good, value in node.stock.items():
+                if value > 0:
+                    new_level.append(self._add_sell_node(node, good, station))
+            
+            # buy
+            for good, prize in station.sell_prizes.items():
+                if prize <= node.money:
+                    new_level.append(self._add_buy_node(node, good, station))
+            
+            # travel
             pass
         
         if len(new_level):
             self.levels.append(new_level)
+            
+    def _add_sell_node(self, node, good, station):
+        print("adding sell node")
+        
+    def _add_buy_node(self, node, good, station):
+        print("adding buy node")
+        
+        _node = Node()
+        n_bought = node.money % station.sell_prizes[good]
+        _node.action = action_buy
+        _node.money = node.money - n_bought * station.sell_prizes[good]
+        _node.stock = node.stock
+        
+        _node.stock[good] += n_bought
+        
+        _node.current_station = node.current_station
+        _node.total_gain = node.total_gain - n_bought * station.sell_prizes[good]
+        _node.parent = node
+        _node.children = []
+        _node.depth = node.depth + 1
+        
+        node.children.append(_node)
+        
+        return _node
         
 class Node:
     def __init__(self):
