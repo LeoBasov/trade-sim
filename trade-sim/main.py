@@ -110,10 +110,20 @@ class Merchant:
     def __init__(self, name, current_station):
         self.name = name
         self.current_station = current_station
-        self.money = 0
+        self._money = 0
+        self.total_money = []
         self.stock = dict()
         self.capacity = dict()
         self.tree = Tree()
+
+    @property
+    def money(self):
+        return self._money
+
+    @money.setter
+    def money(self, value):
+        self._money = value
+        self.total_money.append(value)
 
     def add_good(self, good, amount, capacity):
         self.stock[good] = amount
@@ -437,13 +447,13 @@ def visualize_stations(world):
     plt.show()
 
 if __name__ == '__main__':
-    max_depth = 5
+    max_depth = 8
     world = World(max_depth)
     
     set_up_station(world)
     set_up_merchants(world)
 
-    for i in range(19):
+    for i in range(10):
         world.process()
 
     visualize_best_path(world.merchants[merchant1])
