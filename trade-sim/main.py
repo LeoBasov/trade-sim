@@ -173,7 +173,8 @@ class Tree:
             last_level = len(self.levels)
             self._add_level(stations)
 
-        self.best_path = self.get_best_path_interpolated()
+        print("getting best path")
+        self.best_path = self.get_best_path()
             
     def get_best_path(self):
         max_gain = 0
@@ -181,8 +182,8 @@ class Tree:
         
         for level in self.levels:
             for node in level:
-                if node.total_gain > max_gain:
-                    max_gain = node.total_gain 
+                if node.total_gain[-1] > max_gain:
+                    max_gain = node.total_gain[-1] 
                     best_node = node
                     
         if best_node.parent == None:
@@ -200,8 +201,8 @@ class Tree:
         best_node = self.levels[0][0]
         
         for node in self.levels[-1]:
-            if node.total_gain > max_gain:
-                max_gain = node.total_gain 
+            if node.total_gain[-1] > max_gain:
+                max_gain = node.total_gain[-1] 
                 best_node = node
                     
         if best_node.parent == None:
@@ -216,29 +217,24 @@ class Tree:
     
     def get_best_path_interpolated(self):
         max_slope = -1e-16
-        best_path = None
+        best_node = None
 
         for node in self.levels[-1]:
-            path = [node]
-
-            while path[-1].parent != None:
-                path.append(path[-1].parent)
-
-            path = list(reversed(path))
-            x = []
-            y = []
-
-            for node in path:
-                x.append(node.depth)
-                y.append(node.total_gain)
-
-            res = stats.linregress(x, y)
+            res = stats.linregress(node.depth, node.total_gain)
 
             if res.slope > max_slope:
                 max_slope = res.slope
-                best_path = copy.deepcopy(path)
+                best_node = node
 
-        return best_path
+        if best_node.parent == None:
+            return [best_node]
+        else:
+            nodes = [best_node]
+            
+            while nodes[-1].parent != None:
+                nodes.append(nodes[-1].parent)
+                
+        return list(reversed(nodes))
 
     def _add_root(self, merchant):
         root = Node()
@@ -288,10 +284,10 @@ class Tree:
         _node.stock[good] = 0
         
         _node.current_station = node.current_station
-        _node.total_gain = node.total_gain + node.stock[good] * station.buy_prizes[good]
+        _node.total_gain = node.total_gain + [node.total_gain[-1] + node.stock[good] * station.buy_prizes[good]]
         _node.parent = node
         _node.children = []
-        _node.depth = node.depth + 1
+        _node.depth = node.depth + [node.depth[-1] + 1]
         
         node.children.append(_node)
         
@@ -308,10 +304,10 @@ class Tree:
         _node.stock[good] += n_bought
         
         _node.current_station = node.current_station
-        _node.total_gain = node.total_gain - n_bought * station.sell_prizes[good]
+        _node.total_gain = node.total_gain + [node.total_gain[-1] - n_bought * station.sell_prizes[good]]
         _node.parent = node
         _node.children = []
-        _node.depth = node.depth + 1
+        _node.depth = node.depth + [node.depth[-1] + 1]
         
         node.children.append(_node)
         
@@ -324,10 +320,10 @@ class Tree:
         _node.stock = copy.deepcopy(node.stock)
         _node.capacity = copy.deepcopy(node.capacity)
         _node.current_station = new_station
-        _node.total_gain = node.total_gain - travel_cost
+        _node.total_gain = node.total_gain + [node.total_gain[-1] - travel_cost]
         _node.parent = node
         _node.children = []
-        _node.depth = node.depth + 1
+        _node.depth = node.depth + [node.depth[-1] + 1]
         
         node.children.append(_node)
         
@@ -340,10 +336,10 @@ class Tree:
         _node.stock = copy.deepcopy(node.stock)
         _node.capacity = copy.deepcopy(node.capacity)
         _node.current_station = node.current_station
-        _node.total_gain = node.total_gain - do_nothing_cost
+        _node.total_gain = node.total_gain + [node.total_gain[-1] - do_nothing_cost]
         _node.parent = node
         _node.children = []
-        _node.depth = node.depth + 1
+        _node.depth = node.depth + [node.depth[-1] + 1]
         
         node.children.append(_node)
         
@@ -356,10 +352,10 @@ class Node:
         self.stock = dict()
         self.capacity = dict()
         self.current_station = ""
-        self.total_gain = 0
+        self.total_gain = [0]
         self.parent = None
         self.children = []
-        self.depth = 0
+        self.depth = [0]
         
 def set_up_station(world):
     print("setting up stations")
@@ -375,10 +371,10 @@ def set_up_merchants(world):
     print("setting up merchants")
     
     world.add_merchant(merchant1, station1, 1000)
-    world.add_merchant(merchant2, station2, 1000)
+    #world.add_merchant(merchant2, station2, 1000)
 
     world.merchants[merchant1].add_good(good_a, 0, 100)
-    world.merchants[merchant2].add_good(good_a, 0, 100)
+    #world.merchants[merchant2].add_good(good_a, 0, 100)
     
 def visualize_tree_graphviz(merchant):    
     dot = graphviz.Digraph('tree_graph', comment='tree graph')
@@ -394,14 +390,13 @@ def visualize_tree_graphviz(merchant):
     dot.render(directory='doctest-output', view=True) 
     
 def visualize_best_path(merchant):  
-    best_path = merchant.tree.get_best_path_full()
     dot = graphviz.Digraph('tree_graph', comment='tree graph')
     
-    for node in best_path:
+    for node in merchant.tree.best_path:
         if node.parent == None:
-            dot.node(str(node), "root money: " + str(node.money) + " gain: " + str(node.total_gain))
+            dot.node(str(node), "root money: " + str(node.money) + " gain: " + str(node.total_gain[-1]))
         else:
-            dot.node(str(node), node.action + " money: " + str(node.money) + " gain: " + str(node.total_gain))
+            dot.node(str(node), node.action + " money: " + str(node.money) + " gain: " + str(node.total_gain[-1]))
             dot.edge(str(node.parent), str(node))
     
     dot.render(directory='doctest-output', view=True)
