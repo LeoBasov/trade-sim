@@ -446,19 +446,36 @@ def visualize_stations(world):
     plt.legend(legend)
     plt.show()
 
+def plot_merchants(world):
+    legend = []
+
+    for name, merchant in world.merchants.items():
+        x = np.array([i for i in range(len(merchant.total_money))])
+        res = stats.linregress(x, merchant.total_money)
+
+        plt.plot(x, merchant.total_money, "o")
+        plt.plot(x, res.intercept + res.slope * x, "r")
+
+        legend.append(name + " values")
+        legend.append(name + " slope " + str(round(res.slope, 5)))
+
+    plt.legend(legend)
+    plt.show()
+
 if __name__ == '__main__':
-    max_depth = 8
+    max_depth = 9
     world = World(max_depth)
     
     set_up_station(world)
     set_up_merchants(world)
 
-    for i in range(10):
+    for i in range(100):
         world.process()
 
-    visualize_best_path(world.merchants[merchant1])
+    #visualize_best_path(world.merchants[merchant1])
     #visualize_best_path(world.merchants[merchant2])
     #visualize_stations(world)
+    plot_merchants(world)
     
     print("done")
 
