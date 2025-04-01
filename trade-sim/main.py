@@ -32,8 +32,9 @@ class World:
         self.stations[name] = station
         print("added station:", name)
         
-    def add_merchant(self, name, current_station):
+    def add_merchant(self, name, current_station, money):
         merchant = Merchant(name, self.stations[current_station])
+        merchant.money = money
         self.merchants[name] = merchant
         print("added merchant:", name, "to station:", current_station)
         
@@ -69,6 +70,16 @@ class Station:
 
     def update(self):
         self.has_changed = True
+
+        for good, value in self.money_made.items():
+            if sum(value) < 0.0:
+                self.buy_prizes[good] = int(0.99 * self.buy_prizes[good])
+                #self.sell_prizes[good] = int(1.1 * self.sell_prizes[good])
+
+            if sum(value) > 0.0:
+                #self.buy_prizes[good] = int(1.1 * self.buy_prizes[good])
+                self.sell_prizes[good] = int(1.01 * self.sell_prizes[good])
+
         print("updating station")
         
     def add_good(self, good, number, sell_prize, buy_prize):
@@ -97,7 +108,12 @@ class Merchant:
         self.current_station = current_station
         self.money = 0
         self.stock = dict()
+        self.capacity = dict()
         self.tree = Tree()
+
+    def add_good(self, good, amount, capacity):
+        self.stock[good] = amount
+        self.capacity[good] = capacity
         
     def build_tree(self, stations, max_depth):
         self.tree.build(self, stations, max_depth)
@@ -201,6 +217,7 @@ class Tree:
         
         root.money = merchant.money
         root.stock = merchant.stock
+        root.capacity = copy.deepcopy(merchant.capacity)
         root.current_station = merchant.current_station
         
         self.levels.append([root])
@@ -238,6 +255,7 @@ class Tree:
         _node.action = action_sell
         _node.money = node.money + node.stock[good] * station.buy_prizes[good]
         _node.stock = copy.deepcopy(node.stock)
+        _node.capacity = copy.deepcopy(node.capacity)
         
         _node.stock[good] = 0
         
@@ -253,9 +271,10 @@ class Tree:
         
     def _add_buy_node(self, node, good, station):   
         _node = Node()
-        n_bought = math.floor(node.money / station.sell_prizes[good])
+        n_bought = min(math.floor(node.money / station.sell_prizes[good]), node.capacity[good] - node.stock[good])
         _node.action = action_buy
         _node.money = node.money - n_bought * station.sell_prizes[good]
+        _node.capacity = copy.deepcopy(node.capacity)
         _node.stock = copy.deepcopy(node.stock)
         
         _node.stock[good] += n_bought
@@ -275,6 +294,7 @@ class Tree:
         _node.action = action_move
         _node.money = node.money - travel_cost
         _node.stock = copy.deepcopy(node.stock)
+        _node.capacity = copy.deepcopy(node.capacity)
         _node.current_station = new_station
         _node.total_gain = node.total_gain - travel_cost
         _node.parent = node
@@ -290,6 +310,7 @@ class Tree:
         _node.action = action_none
         _node.money = node.money - do_nothing_cost
         _node.stock = copy.deepcopy(node.stock)
+        _node.capacity = copy.deepcopy(node.capacity)
         _node.current_station = node.current_station
         _node.total_gain = node.total_gain - do_nothing_cost
         _node.parent = node
@@ -305,6 +326,7 @@ class Node:
         self.action = action_none
         self.money = 0
         self.stock = dict()
+        self.capacity = dict()
         self.current_station = ""
         self.total_gain = 0
         self.parent = None
@@ -324,14 +346,11 @@ def set_up_station(world):
 def set_up_merchants(world):
     print("setting up merchants")
     
-    world.add_merchant(merchant1, station1)
-    #world.add_merchant(merchant2, station2)
-    
-    world.merchants[merchant1].money = 11
-    world.merchants[merchant1].stock[good_a] = 0
+    world.add_merchant(merchant1, station1, 1000)
+    world.add_merchant(merchant2, station2, 1000)
 
-    #world.merchants[merchant2].money = 11
-    #world.merchants[merchant2].stock[good_a] = 0
+    world.merchants[merchant1].add_good(good_a, 0, 100)
+    world.merchants[merchant2].add_good(good_a, 0, 100)
     
 def visualize_tree_graphviz(merchant):    
     dot = graphviz.Digraph('tree_graph', comment='tree graph')
@@ -376,15 +395,15 @@ def visualize_stations(world):
     plt.show()
 
 if __name__ == '__main__':
-    max_depth = 12
+    max_depth = 8
     world = World(max_depth)
     
     set_up_station(world)
     set_up_merchants(world)
 
-    for i in range(22):
-        if i > 0 and (i % (max_depth - 1) == 0):
-            world.update_stations()
+    for i in range(7):
+        #if i > 0 and (i % int(max_depth * 0.5) == 0):
+        #    world.update_stations()
 
         world.process()
     
