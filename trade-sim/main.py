@@ -40,7 +40,7 @@ class World:
         self.merchants[name] = merchant
         print("added merchant:", name, "to station:", current_station)
         
-    def build_trees(self, path='interpolated'):
+    def build_trees(self, path='best'):
         print("building trees")
         
         for name, merchant in self.merchants.items():
@@ -206,7 +206,7 @@ class Tree:
             self.best_path = self.get_best_path_interpolated()
             
     def get_best_path(self):
-        max_gain = 0
+        max_gain = -1e-16
         best_node = self.levels[0][0]
         
         for level in self.levels:
@@ -226,7 +226,7 @@ class Tree:
         return list(reversed(nodes))
     
     def get_best_path_full(self):
-        max_gain = -10000
+        max_gain = -1e-16
         best_node = self.levels[0][0]
         
         for node in self.levels[-1]:
@@ -463,13 +463,13 @@ def plot_merchants(world):
     plt.show()
 
 if __name__ == '__main__':
-    max_depth = 9
+    max_depth = 5
     world = World(max_depth)
     
     set_up_station(world)
     set_up_merchants(world)
 
-    for i in range(100):
+    for i in range(10):
         world.process()
 
     #visualize_best_path(world.merchants[merchant1])
