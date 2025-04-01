@@ -1,0 +1,18 @@
+// tree graph
+digraph tree_graph {
+	<__main__.Node object at 0x7f7614461540> [label="root money: 1000 gain: 0"]
+	<__main__.Node object at 0x7f76144615d0> [label="buy money: 100 gain: -900"]
+	<__main__.Node object at 0x7f7614461540> -> <__main__.Node object at 0x7f76144615d0>
+	<__main__.Node object at 0x7f7614461720> [label="move money: 98 gain: -902"]
+	<__main__.Node object at 0x7f76144615d0> -> <__main__.Node object at 0x7f7614461720>
+	<__main__.Node object at 0x7f7614461c60> [label="sell money: 1498 gain: 498"]
+	<__main__.Node object at 0x7f7614461720> -> <__main__.Node object at 0x7f7614461c60>
+	<__main__.Node object at 0x7f7614463400> [label="move money: 1496 gain: 496"]
+	<__main__.Node object at 0x7f7614461c60> -> <__main__.Node object at 0x7f7614463400>
+	<__main__.Node object at 0x7f76144dde70> [label="buy money: 596 gain: -404"]
+	<__main__.Node object at 0x7f7614463400> -> <__main__.Node object at 0x7f76144dde70>
+	<__main__.Node object at 0x7f76142bb0d0> [label="move money: 594 gain: -406"]
+	<__main__.Node object at 0x7f76144dde70> -> <__main__.Node object at 0x7f76142bb0d0>
+	<__main__.Node object at 0x7f761395c1c0> [label="sell money: 1994 gain: 994"]
+	<__main__.Node object at 0x7f76142bb0d0> -> <__main__.Node object at 0x7f761395c1c0>
+}
