@@ -55,7 +55,9 @@ class World:
                 self.build_trees()
 
         for name, merchant in self.merchants.items():
-            merchant.process()
+            if not merchant.process():
+                self.update_stations()
+                break
 
     def update_stations(self):
         for name, station in self.stations.items():
@@ -122,12 +124,18 @@ class Merchant:
 
     def process(self):
         next_step = self.tree.get_next_step()
+
+        if next_step == None:
+            return False
+        
+        print(self.name, "money at start:", self.money)
         
         if next_step == None:
             raise Exception("next_step is None")
         elif next_step.action == action_move:
             print(self.name + " processsing action " + action_move + " form " + self.current_station.name + " to " + next_step.current_station.name)
             self.current_station = next_step.current_station
+            self.money -= travel_cost
         elif next_step.action == action_buy:
             for good, value in self.stock.items():
                 if value != next_step.stock[good]:
@@ -143,7 +151,12 @@ class Merchant:
                     print(self.name + " processsing action " + action_sell + " of " + good + " amout " + str(amount))
 
         elif next_step.action == action_none:
+            self.money -= do_nothing_cost
             print(self.name + " processsing action " + action_none)
+
+        print(self.name, "money at end:", self.money)
+
+        return True
 
 class Tree:
     def __init__(self):
@@ -377,10 +390,10 @@ def set_up_merchants(world):
     print("setting up merchants")
     
     world.add_merchant(merchant1, station1, 100)
-    world.add_merchant(merchant2, station2, 100)
+    #world.add_merchant(merchant2, station2, 100)
 
     world.merchants[merchant1].add_good(good_a, 0, 10)
-    world.merchants[merchant2].add_good(good_a, 0, 10)
+    #world.merchants[merchant2].add_good(good_a, 0, 10)
     
 def visualize_tree_graphviz(merchant):    
     dot = graphviz.Digraph('tree_graph', comment=merchant.name)
@@ -424,21 +437,18 @@ def visualize_stations(world):
     plt.show()
 
 if __name__ == '__main__':
-    max_depth = 12
+    max_depth = 5
     world = World(max_depth)
     
     set_up_station(world)
     set_up_merchants(world)
 
-    for i in range(20):
-        try:
-            world.process()
-        except:
-            world.update_stations()
+    for i in range(19):
+        world.process()
 
     visualize_best_path(world.merchants[merchant1])
-    visualize_best_path(world.merchants[merchant2])
-    visualize_stations(world)
+    #visualize_best_path(world.merchants[merchant2])
+    #visualize_stations(world)
     
     print("done")
 
