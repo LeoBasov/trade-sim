@@ -40,11 +40,11 @@ class World:
         self.merchants[name] = merchant
         print("added merchant:", name, "to station:", current_station)
         
-    def build_trees(self):
+    def build_trees(self, path='interpolated'):
         print("building trees")
         
         for name, merchant in self.merchants.items():
-            merchant.build_tree(self.stations, self.max_depth)
+            merchant.build_tree(self.stations, self.max_depth, path)
 
         for name, station in self.stations.items():
             station.has_changed = False
@@ -73,14 +73,14 @@ class Station:
     def update(self):
         self.has_changed = True
 
-        for good, value in self.money_made.items():
+        """for good, value in self.money_made.items():
             if sum(value) < 0.0:
                 self.buy_prizes[good] = int(0.99 * self.buy_prizes[good])
                 #self.sell_prizes[good] = int(1.1 * self.sell_prizes[good])
 
             if sum(value) > 0.0:
                 #self.buy_prizes[good] = int(1.1 * self.buy_prizes[good])
-                self.sell_prizes[good] = int(1.01 * self.sell_prizes[good])
+                self.sell_prizes[good] = int(1.01 * self.sell_prizes[good])"""
 
         print("updating station")
         
@@ -117,8 +117,8 @@ class Merchant:
         self.stock[good] = amount
         self.capacity[good] = capacity
         
-    def build_tree(self, stations, max_depth):
-        self.tree.build(self, stations, max_depth)
+    def build_tree(self, stations, max_depth, path):
+        self.tree.build(self, stations, max_depth, path)
 
     def process(self):
         next_step = self.tree.get_next_step()
@@ -163,7 +163,7 @@ class Tree:
         self.best_path = []
         self.current_step = 1
         
-    def build(self, merchant, stations, max_depth):
+    def build(self, merchant, stations, max_depth, path):
         last_level = 0
         
         self.clear()
@@ -174,7 +174,13 @@ class Tree:
             self._add_level(stations)
 
         print("getting best path")
-        self.best_path = self.get_best_path()
+        
+        if path == 'best':
+            self.best_path = self.get_best_path()
+        elif path == 'full':
+            self.best_path = self.get_best_path_full()
+        elif path == 'interpolated':
+            self.best_path = self.get_best_path_interpolated()
             
     def get_best_path(self):
         max_gain = 0
@@ -259,7 +265,7 @@ class Tree:
             
             # buy
             for good, prize in station.sell_prizes.items():
-                if prize <= node.money:
+                if prize <= node.money and (node.capacity[good] - node.stock[good]) > 0:
                     new_level.append(self._add_buy_node(node, good, station))
             
             # travel
@@ -389,7 +395,7 @@ def visualize_tree_graphviz(merchant):
     
     dot.render(directory='doctest-output', view=True) 
     
-def visualize_best_path(merchant):  
+def visualize_best_path(merchant, dir='doctest-output'):  
     dot = graphviz.Digraph('tree_graph', comment='tree graph')
     
     for node in merchant.tree.best_path:
@@ -399,7 +405,7 @@ def visualize_best_path(merchant):
             dot.node(str(node), node.action + " money: " + str(node.money) + " gain: " + str(node.total_gain[-1]))
             dot.edge(str(node.parent), str(node))
     
-    dot.render(directory='doctest-output', view=True)
+    dot.render(directory=dir, view=True)
 
 def visualize_stations(world):
     legend = []
@@ -425,15 +431,13 @@ if __name__ == '__main__':
     set_up_merchants(world)
 
     for i in range(7):
-        #if i > 0 and (i % int(max_depth * 0.5) == 0):
-        #    world.update_stations()
+        try:
+            world.process()
+        except:
+            world.update_stations()
 
-        world.process()
-    
-    #visualize_tree_graphviz(world.merchants[merchant1])
-    visualize_best_path(world.merchants[merchant1])
-    #visualize_best_path(world.merchants[merchant2])
-    #visualize_stations(world)
+    visualize_best_path(world.merchants[merchant1], "interpolated")
+    visualize_stations(world)
     
     print("done")
 
