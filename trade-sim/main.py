@@ -4,6 +4,8 @@ import copy
 import graphviz
 import math
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
 
 station1 = "station 1"
 station2 = "station 2"
@@ -171,7 +173,7 @@ class Tree:
             last_level = len(self.levels)
             self._add_level(stations)
 
-        self.best_path = self.get_best_path_full()
+        self.best_path = self.get_best_path_interpolated()
             
     def get_best_path(self):
         max_gain = 0
@@ -211,7 +213,33 @@ class Tree:
                 nodes.append(nodes[-1].parent)
                 
         return list(reversed(nodes))
-        
+    
+    def get_best_path_interpolated(self):
+        max_slope = -1e-16
+        best_path = None
+
+        for node in self.levels[-1]:
+            path = [node]
+
+            while path[-1].parent != None:
+                path.append(path[-1].parent)
+
+            path = list(reversed(path))
+            x = []
+            y = []
+
+            for node in path:
+                x.append(node.depth)
+                y.append(node.total_gain)
+
+            res = stats.linregress(x, y)
+
+            if res.slope > max_slope:
+                max_slope = res.slope
+                best_path = copy.deepcopy(path)
+
+        return best_path
+
     def _add_root(self, merchant):
         root = Node()
         
@@ -410,7 +438,7 @@ if __name__ == '__main__':
     #visualize_tree_graphviz(world.merchants[merchant1])
     visualize_best_path(world.merchants[merchant1])
     #visualize_best_path(world.merchants[merchant2])
-    visualize_stations(world)
+    #visualize_stations(world)
     
     print("done")
 
