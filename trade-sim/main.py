@@ -376,14 +376,14 @@ def set_up_station(world):
 def set_up_merchants(world):
     print("setting up merchants")
     
-    world.add_merchant(merchant1, station1, 1000)
-    #world.add_merchant(merchant2, station2, 1000)
+    world.add_merchant(merchant1, station1, 100)
+    world.add_merchant(merchant2, station2, 100)
 
-    world.merchants[merchant1].add_good(good_a, 0, 100)
-    #world.merchants[merchant2].add_good(good_a, 0, 100)
+    world.merchants[merchant1].add_good(good_a, 0, 10)
+    world.merchants[merchant2].add_good(good_a, 0, 10)
     
 def visualize_tree_graphviz(merchant):    
-    dot = graphviz.Digraph('tree_graph', comment='tree graph')
+    dot = graphviz.Digraph('tree_graph', comment=merchant.name)
     
     for level in merchant.tree.levels:
         for node in level:
@@ -395,8 +395,8 @@ def visualize_tree_graphviz(merchant):
     
     dot.render(directory='doctest-output', view=True) 
     
-def visualize_best_path(merchant, dir='doctest-output'):  
-    dot = graphviz.Digraph('tree_graph', comment='tree graph')
+def visualize_best_path(merchant):  
+    dot = graphviz.Digraph(merchant.name, comment=merchant.name)
     
     for node in merchant.tree.best_path:
         if node.parent == None:
@@ -405,7 +405,7 @@ def visualize_best_path(merchant, dir='doctest-output'):
             dot.node(str(node), node.action + " money: " + str(node.money) + " gain: " + str(node.total_gain[-1]))
             dot.edge(str(node.parent), str(node))
     
-    dot.render(directory=dir, view=True)
+    dot.render(directory="output_" + merchant.name, view=True)
 
 def visualize_stations(world):
     legend = []
@@ -424,19 +424,20 @@ def visualize_stations(world):
     plt.show()
 
 if __name__ == '__main__':
-    max_depth = 8
+    max_depth = 12
     world = World(max_depth)
     
     set_up_station(world)
     set_up_merchants(world)
 
-    for i in range(7):
+    for i in range(20):
         try:
             world.process()
         except:
             world.update_stations()
 
-    visualize_best_path(world.merchants[merchant1], "interpolated")
+    visualize_best_path(world.merchants[merchant1])
+    visualize_best_path(world.merchants[merchant2])
     visualize_stations(world)
     
     print("done")
