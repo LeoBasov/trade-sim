@@ -4,6 +4,8 @@ import copy
 import graphviz
 import math
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
 
 station1 = "station 1"
 station2 = "station 2"
@@ -38,11 +40,11 @@ class World:
         self.merchants[name] = merchant
         print("added merchant:", name, "to station:", current_station)
         
-    def build_trees(self):
+    def build_trees(self, path='best'):
         print("building trees")
         
         for name, merchant in self.merchants.items():
-            merchant.build_tree(self.stations, self.max_depth)
+            merchant.build_tree(self.stations, self.max_depth, path)
 
         for name, station in self.stations.items():
             station.has_changed = False
@@ -53,7 +55,9 @@ class World:
                 self.build_trees()
 
         for name, merchant in self.merchants.items():
-            merchant.process()
+            if not merchant.process():
+                self.update_stations()
+                break
 
     def update_stations(self):
         for name, station in self.stations.items():
@@ -71,14 +75,14 @@ class Station:
     def update(self):
         self.has_changed = True
 
-        for good, value in self.money_made.items():
+        """for good, value in self.money_made.items():
             if sum(value) < 0.0:
                 self.buy_prizes[good] = int(0.99 * self.buy_prizes[good])
                 #self.sell_prizes[good] = int(1.1 * self.sell_prizes[good])
 
             if sum(value) > 0.0:
                 #self.buy_prizes[good] = int(1.1 * self.buy_prizes[good])
-                self.sell_prizes[good] = int(1.01 * self.sell_prizes[good])
+                self.sell_prizes[good] = int(1.01 * self.sell_prizes[good])"""
 
         print("updating station")
         
@@ -106,26 +110,42 @@ class Merchant:
     def __init__(self, name, current_station):
         self.name = name
         self.current_station = current_station
-        self.money = 0
+        self._money = 0
+        self.total_money = []
         self.stock = dict()
         self.capacity = dict()
         self.tree = Tree()
+
+    @property
+    def money(self):
+        return self._money
+
+    @money.setter
+    def money(self, value):
+        self._money = value
+        self.total_money.append(value)
 
     def add_good(self, good, amount, capacity):
         self.stock[good] = amount
         self.capacity[good] = capacity
         
-    def build_tree(self, stations, max_depth):
-        self.tree.build(self, stations, max_depth)
+    def build_tree(self, stations, max_depth, path):
+        self.tree.build(self, stations, max_depth, path)
 
     def process(self):
         next_step = self.tree.get_next_step()
+
+        if next_step == None:
+            return False
+        
+        print(self.name, "money at start:", self.money)
         
         if next_step == None:
             raise Exception("next_step is None")
         elif next_step.action == action_move:
             print(self.name + " processsing action " + action_move + " form " + self.current_station.name + " to " + next_step.current_station.name)
             self.current_station = next_step.current_station
+            self.money -= travel_cost
         elif next_step.action == action_buy:
             for good, value in self.stock.items():
                 if value != next_step.stock[good]:
@@ -141,7 +161,12 @@ class Merchant:
                     print(self.name + " processsing action " + action_sell + " of " + good + " amout " + str(amount))
 
         elif next_step.action == action_none:
+            self.money -= do_nothing_cost
             print(self.name + " processsing action " + action_none)
+
+        print(self.name, "money at end:", self.money)
+
+        return True
 
 class Tree:
     def __init__(self):
@@ -161,7 +186,7 @@ class Tree:
         self.best_path = []
         self.current_step = 1
         
-    def build(self, merchant, stations, max_depth):
+    def build(self, merchant, stations, max_depth, path):
         last_level = 0
         
         self.clear()
@@ -171,16 +196,23 @@ class Tree:
             last_level = len(self.levels)
             self._add_level(stations)
 
-        self.best_path = self.get_best_path_full()
+        print("getting best path")
+        
+        if path == 'best':
+            self.best_path = self.get_best_path()
+        elif path == 'full':
+            self.best_path = self.get_best_path_full()
+        elif path == 'interpolated':
+            self.best_path = self.get_best_path_interpolated()
             
     def get_best_path(self):
-        max_gain = 0
+        max_gain = -1e-16
         best_node = self.levels[0][0]
         
         for level in self.levels:
             for node in level:
-                if node.total_gain > max_gain:
-                    max_gain = node.total_gain 
+                if node.total_gain[-1] > max_gain:
+                    max_gain = node.total_gain[-1] 
                     best_node = node
                     
         if best_node.parent == None:
@@ -194,12 +226,12 @@ class Tree:
         return list(reversed(nodes))
     
     def get_best_path_full(self):
-        max_gain = -10000
+        max_gain = -1e-16
         best_node = self.levels[0][0]
         
         for node in self.levels[-1]:
-            if node.total_gain > max_gain:
-                max_gain = node.total_gain 
+            if node.total_gain[-1] > max_gain:
+                max_gain = node.total_gain[-1] 
                 best_node = node
                     
         if best_node.parent == None:
@@ -211,7 +243,28 @@ class Tree:
                 nodes.append(nodes[-1].parent)
                 
         return list(reversed(nodes))
-        
+    
+    def get_best_path_interpolated(self):
+        max_slope = -1e-16
+        best_node = None
+
+        for node in self.levels[-1]:
+            res = stats.linregress(node.depth, node.total_gain)
+
+            if res.slope > max_slope:
+                max_slope = res.slope
+                best_node = node
+
+        if best_node.parent == None:
+            return [best_node]
+        else:
+            nodes = [best_node]
+            
+            while nodes[-1].parent != None:
+                nodes.append(nodes[-1].parent)
+                
+        return list(reversed(nodes))
+
     def _add_root(self, merchant):
         root = Node()
         
@@ -235,7 +288,7 @@ class Tree:
             
             # buy
             for good, prize in station.sell_prizes.items():
-                if prize <= node.money:
+                if prize <= node.money and (node.capacity[good] - node.stock[good]) > 0:
                     new_level.append(self._add_buy_node(node, good, station))
             
             # travel
@@ -260,10 +313,10 @@ class Tree:
         _node.stock[good] = 0
         
         _node.current_station = node.current_station
-        _node.total_gain = node.total_gain + node.stock[good] * station.buy_prizes[good]
+        _node.total_gain = node.total_gain + [node.total_gain[-1] + node.stock[good] * station.buy_prizes[good]]
         _node.parent = node
         _node.children = []
-        _node.depth = node.depth + 1
+        _node.depth = node.depth + [node.depth[-1] + 1]
         
         node.children.append(_node)
         
@@ -280,10 +333,10 @@ class Tree:
         _node.stock[good] += n_bought
         
         _node.current_station = node.current_station
-        _node.total_gain = node.total_gain - n_bought * station.sell_prizes[good]
+        _node.total_gain = node.total_gain + [node.total_gain[-1] - n_bought * station.sell_prizes[good]]
         _node.parent = node
         _node.children = []
-        _node.depth = node.depth + 1
+        _node.depth = node.depth + [node.depth[-1] + 1]
         
         node.children.append(_node)
         
@@ -296,10 +349,10 @@ class Tree:
         _node.stock = copy.deepcopy(node.stock)
         _node.capacity = copy.deepcopy(node.capacity)
         _node.current_station = new_station
-        _node.total_gain = node.total_gain - travel_cost
+        _node.total_gain = node.total_gain + [node.total_gain[-1] - travel_cost]
         _node.parent = node
         _node.children = []
-        _node.depth = node.depth + 1
+        _node.depth = node.depth + [node.depth[-1] + 1]
         
         node.children.append(_node)
         
@@ -312,10 +365,10 @@ class Tree:
         _node.stock = copy.deepcopy(node.stock)
         _node.capacity = copy.deepcopy(node.capacity)
         _node.current_station = node.current_station
-        _node.total_gain = node.total_gain - do_nothing_cost
+        _node.total_gain = node.total_gain + [node.total_gain[-1] - do_nothing_cost]
         _node.parent = node
         _node.children = []
-        _node.depth = node.depth + 1
+        _node.depth = node.depth + [node.depth[-1] + 1]
         
         node.children.append(_node)
         
@@ -328,10 +381,10 @@ class Node:
         self.stock = dict()
         self.capacity = dict()
         self.current_station = ""
-        self.total_gain = 0
+        self.total_gain = [0]
         self.parent = None
         self.children = []
-        self.depth = 0
+        self.depth = [0]
         
 def set_up_station(world):
     print("setting up stations")
@@ -346,14 +399,14 @@ def set_up_station(world):
 def set_up_merchants(world):
     print("setting up merchants")
     
-    world.add_merchant(merchant1, station1, 1000)
-    world.add_merchant(merchant2, station2, 1000)
+    world.add_merchant(merchant1, station1, 100)
+    #world.add_merchant(merchant2, station2, 100)
 
-    world.merchants[merchant1].add_good(good_a, 0, 100)
-    world.merchants[merchant2].add_good(good_a, 0, 100)
+    world.merchants[merchant1].add_good(good_a, 0, 10)
+    #world.merchants[merchant2].add_good(good_a, 0, 10)
     
 def visualize_tree_graphviz(merchant):    
-    dot = graphviz.Digraph('tree_graph', comment='tree graph')
+    dot = graphviz.Digraph('tree_graph', comment=merchant.name)
     
     for level in merchant.tree.levels:
         for node in level:
@@ -366,17 +419,16 @@ def visualize_tree_graphviz(merchant):
     dot.render(directory='doctest-output', view=True) 
     
 def visualize_best_path(merchant):  
-    best_path = merchant.tree.get_best_path_full()
-    dot = graphviz.Digraph('tree_graph', comment='tree graph')
+    dot = graphviz.Digraph(merchant.name, comment=merchant.name)
     
-    for node in best_path:
+    for node in merchant.tree.best_path:
         if node.parent == None:
-            dot.node(str(node), "root money: " + str(node.money) + " gain: " + str(node.total_gain))
+            dot.node(str(node), "root money: " + str(node.money) + " gain: " + str(node.total_gain[-1]))
         else:
-            dot.node(str(node), node.action + " money: " + str(node.money) + " gain: " + str(node.total_gain))
+            dot.node(str(node), node.action + " money: " + str(node.money) + " gain: " + str(node.total_gain[-1]))
             dot.edge(str(node.parent), str(node))
     
-    dot.render(directory='doctest-output', view=True)
+    dot.render(directory="output_" + merchant.name, view=True)
 
 def visualize_stations(world):
     legend = []
@@ -394,23 +446,36 @@ def visualize_stations(world):
     plt.legend(legend)
     plt.show()
 
+def plot_merchants(world):
+    legend = []
+
+    for name, merchant in world.merchants.items():
+        x = np.array([i for i in range(len(merchant.total_money))])
+        res = stats.linregress(x, merchant.total_money)
+
+        plt.plot(x, merchant.total_money, "o")
+        plt.plot(x, res.intercept + res.slope * x, "r")
+
+        legend.append(name + " values")
+        legend.append(name + " slope " + str(round(res.slope, 5)))
+
+    plt.legend(legend)
+    plt.show()
+
 if __name__ == '__main__':
-    max_depth = 8
+    max_depth = 5
     world = World(max_depth)
     
     set_up_station(world)
     set_up_merchants(world)
 
-    for i in range(7):
-        #if i > 0 and (i % int(max_depth * 0.5) == 0):
-        #    world.update_stations()
-
+    for i in range(10):
         world.process()
-    
-    #visualize_tree_graphviz(world.merchants[merchant1])
-    visualize_best_path(world.merchants[merchant1])
+
+    #visualize_best_path(world.merchants[merchant1])
     #visualize_best_path(world.merchants[merchant2])
-    visualize_stations(world)
+    #visualize_stations(world)
+    plot_merchants(world)
     
     print("done")
 
