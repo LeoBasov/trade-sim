@@ -45,13 +45,23 @@ class GoapAgent:
         self.actions = [ActionBuy(), ActionSell()]
         self.tree = gp.Tree()
 
-
     def build_tree(self):
         self.tree.build(self.actions, self.state)
 
+    def get_plan(self, goal):
+        return reversed(self.tree.get_path(goal, self.state))
+    
+    def execute_plan(self, plan):
+        pass
+
 if __name__ == '__main__':
     agent = GoapAgent()
+    goal = Goal()
 
     agent.build_tree()
+    plan = agent.get_plan(goal)
+
+    print([node.action for node in plan])
+    print(agent.state)
 
     print("done")

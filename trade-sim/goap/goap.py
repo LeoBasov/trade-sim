@@ -62,6 +62,35 @@ class Tree:
         for leaf in self.roots:
             self.add_children(leaf, actions)
 
+    def get_path(self, goal, state):
+        path = []
+        goal_leaf = self.find_goal_leaf(goal, state, self.roots)
+
+        if goal_leaf != None:
+            leaf = goal_leaf
+
+            while(leaf.parent != None):
+                path.append(deepcopy(leaf))
+                leaf = leaf.parent
+
+            path.append(deepcopy(leaf))
+
+        return path
+
+    def find_goal_leaf(self, goal, state, leafs):
+        goal_leaf = None
+
+        for leaf in leafs:
+            if goal.check(state, leaf.state):
+                return leaf
+            
+        for leaf in leafs:
+            goal_leaf = self.find_goal_leaf(goal, state, leaf.children)
+
+            if goal_leaf != None:
+                return goal_leaf
+
+        return goal_leaf
 
     def add_children(self, leaf, actions):
         for action in actions:
