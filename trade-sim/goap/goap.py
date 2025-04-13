@@ -13,6 +13,12 @@ class Action:
     def apply_results(self, state):
         pass
 
+    def __str__(self):
+        return self.name
+    
+    def __eq__(self, value):
+        return self.name == value.name
+
 class Goal:
     def __init__(self):
         pass
@@ -29,7 +35,8 @@ class Leaf:
         self.path_actions = []
 
         if _parent != None:
-            self.path_actions = [deepcopy(_parent.path_actions), _action]
+            self.path_actions = deepcopy(_parent.path_actions)
+            self.path_actions.append(_action)
         else:
             self.path_actions = [_action,]
 
@@ -66,7 +73,5 @@ class Tree:
             else:
                 print("preconditons dont apply")
 
-        print(leaf)
-
-        #for child in leaf.children:
-        #    self.add_children(leaf, actions)
+        for child in leaf.children:
+            self.add_children(child, actions)

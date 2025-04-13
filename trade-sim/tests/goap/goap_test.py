@@ -28,7 +28,7 @@ class ActionBuy(gp.Action):
 
 class ActionSell(gp.Action):
     def __init__(self):
-        self.name = "buy"
+        self.name = "sell"
         self.value = 14
 
     def check_preconditions(self, state):
