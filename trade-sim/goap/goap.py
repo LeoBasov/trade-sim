@@ -10,6 +10,9 @@ class Action:
     def check_preconditions(self, state):
         pass
 
+    def get_cost(self, state):
+        pass
+
     def apply_results(self, state):
         pass
 
@@ -33,13 +36,16 @@ class Leaf:
         self.state = deepcopy(_state) # state after the action was performed
         self.children = []
         self.path_actions = []
+        self.cost = 0
 
         if _parent != None:
             self.path_actions = deepcopy(_parent.path_actions)
             self.path_actions.append(_action)
+            self.cost = _parent.cost
         else:
             self.path_actions = [_action,]
 
+        self.cost += self.action.get_cost(self.state)
         self.action.apply_results(self.state)
 
     def __str__(self):
@@ -66,7 +72,7 @@ class Tree:
 
     def get_plan(self, goal, state):
         plan = []
-        goal_leaf = self.find_goal_leaf(goal, state, self.roots)
+        goal_leaf = self.find_goal_leaf(goal, state)
 
         if goal_leaf != None:
             leaf = goal_leaf
@@ -79,18 +85,14 @@ class Tree:
 
         return [p for p in reversed(plan)]
 
-    def find_goal_leaf(self, goal, state, leafs):
+    def find_goal_leaf(self, goal, state):
         goal_leaf = None
+        min_cost = 1e6
 
-        for leaf in leafs:
-            if goal.check(state, leaf.state):
-                return leaf
-            
-        for leaf in leafs:
-            goal_leaf = self.find_goal_leaf(goal, state, leaf.children)
-
-            if goal_leaf != None:
-                return goal_leaf
+        for leaf in self.leafs:
+            if goal.check(state, leaf.state) and leaf.cost < min_cost:
+                min_cost = leaf.cost
+                goal_leaf = leaf
 
         return goal_leaf
 

@@ -21,6 +21,9 @@ class ActionBuy(gp.Action):
 
     def check_preconditions(self, state):
         return state[States.MONEY] > self.value
+    
+    def get_cost(self, state):
+        return self.value
 
     def apply_results(self, state):
         state[States.MONEY] -= self.value
@@ -33,15 +36,18 @@ class ActionSell(gp.Action):
 
     def check_preconditions(self, state):
         return state[States.GOODS] > 0
+    
+    def get_cost(self, state):
+        return -self.value * state[States.GOODS]
 
     def apply_results(self, state):
-        state[States.MONEY] += self.value
-        state[States.GOODS] -= 1
+        state[States.MONEY] += self.value * state[States.GOODS]
+        state[States.GOODS] = 0
     
 class GoapAgent:
     def __init__(self):
         self.goal = Goal()
-        self.state = {States.MONEY : 100, States.GOODS : 0}
+        self.state = {States.MONEY : 100, States.GOODS : 1}
         self.actions = [ActionBuy(), ActionSell()]
         self.tree = gp.Tree()
 
