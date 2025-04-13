@@ -472,7 +472,7 @@ if __name__ == '__main__':
     for i in range(10):
         world.process()
 
-    #visualize_best_path(world.merchants[merchant1])
+    visualize_best_path(world.merchants[merchant1])
     #visualize_best_path(world.merchants[merchant2])
     #visualize_stations(world)
     plot_merchants(world)
