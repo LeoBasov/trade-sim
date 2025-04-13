@@ -49,10 +49,11 @@ class GoapAgent:
         self.tree.build(self.actions, self.state)
 
     def get_plan(self, goal):
-        return reversed(self.tree.get_path(goal, self.state))
+        return self.tree.get_plan(goal, self.state)
     
     def execute_plan(self, plan):
-        pass
+        for action in plan:
+            action.apply_results(self.state)
 
 if __name__ == '__main__':
     agent = GoapAgent()
@@ -61,7 +62,10 @@ if __name__ == '__main__':
     agent.build_tree()
     plan = agent.get_plan(goal)
 
-    print([node.action for node in plan])
+    print(plan)
+    print(agent.state)
+
+    agent.execute_plan(plan)
     print(agent.state)
 
     print("done")
