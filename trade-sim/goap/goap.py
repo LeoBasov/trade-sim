@@ -50,6 +50,7 @@ class Leaf:
 class Tree:
     def __init__(self):
         self.roots = []
+        self.leafs = []
 
     def build(self, actions, state):
         self.roots = []
@@ -58,6 +59,7 @@ class Tree:
             if action.check_preconditions(state):
                 print("adding root")
                 self.roots.append(Leaf(None, action, state))
+                self.leafs.append(Leaf(None, action, state))
 
         for leaf in self.roots:
             self.add_children(leaf, actions)
@@ -99,6 +101,7 @@ class Tree:
             elif action.check_preconditions(leaf.state):
                 print("adding child")
                 leaf.children.append(Leaf(leaf, action, leaf.state))
+                self.leafs.append(Leaf(leaf, action, leaf.state))
             else:
                 print("preconditons dont apply")
 
